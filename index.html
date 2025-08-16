@@ -12,6 +12,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Include JSZip for creating a downloadable zip file on the fly -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <!-- Include PapaParse for easy CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         /* Apply the Inter font globally and add a vibrant gradient background */
         body {
@@ -130,31 +132,31 @@
                         <!-- File upload boxes -->
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputAmazonB2C').click()">
                             <p class="font-bold text-gray-600">Upload Amazon B2C</p>
-                            <input type="file" id="fileInputAmazonB2C" class="hidden" accept=".csv, .xlsx" data-file-name="Amazon B2C">
+                            <input type="file" id="fileInputAmazonB2C" class="hidden" accept=".csv" data-file-name="Amazon B2C">
                         </div>
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputFlipkart').click()">
                             <p class="font-bold text-gray-600">Upload Flipkart</p>
-                            <input type="file" id="fileInputFlipkart" class="hidden" accept=".csv, .xlsx" data-file-name="Flipkart">
+                            <input type="file" id="fileInputFlipkart" class="hidden" accept=".csv" data-file-name="Flipkart">
                         </div>
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputJiomart').click()">
                             <p class="font-bold text-gray-600">Upload Jiomart</p>
-                            <input type="file" id="fileInputJiomart" class="hidden" accept=".csv, .xlsx" data-file-name="Jiomart">
+                            <input type="file" id="fileInputJiomart" class="hidden" accept=".csv" data-file-name="Jiomart">
                         </div>
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputMeeshoSale').click()">
                             <p class="font-bold text-gray-600">Upload Meesho Sale</p>
-                            <input type="file" id="fileInputMeeshoSale" class="hidden" accept=".csv, .xlsx" data-file-name="Meesho Sale">
+                            <input type="file" id="fileInputMeeshoSale" class="hidden" accept=".csv" data-file-name="Meesho Sale">
                         </div>
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputMeeshoReturn').click()">
                             <p class="font-bold text-gray-600">Upload Meesho Sales return</p>
-                            <input type="file" id="fileInputMeeshoReturn" class="hidden" accept=".csv, .xlsx" data-file-name="Meesho Sales return">
+                            <input type="file" id="fileInputMeeshoReturn" class="hidden" accept=".csv" data-file-name="Meesho Sales return">
                         </div>
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputGlowroad').click()">
                             <p class="font-bold text-gray-600">Upload Glowroad</p>
-                            <input type="file" id="fileInputGlowroad" class="hidden" accept=".csv, .xlsx" data-file-name="Glowroad">
+                            <input type="file" id="fileInputGlowroad" class="hidden" accept=".csv" data-file-name="Glowroad">
                         </div>
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputB2COthers').click()">
                             <p class="font-bold text-gray-600">Upload B2C others</p>
-                            <input type="file" id="fileInputB2COthers" class="hidden" accept=".csv, .xlsx" data-file-name="B2C others">
+                            <input type="file" id="fileInputB2COthers" class="hidden" accept=".csv" data-file-name="B2C others">
                         </div>
                     </div>
                 </div>
@@ -166,11 +168,11 @@
                         <!-- File upload boxes -->
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputB2BTemplate').click()">
                             <p class="font-bold text-gray-600">Import B2B Template</p>
-                            <input type="file" id="fileInputB2BTemplate" class="hidden" accept=".csv, .xlsx" data-file-name="B2B Template">
+                            <input type="file" id="fileInputB2BTemplate" class="hidden" accept=".csv" data-file-name="B2B Template">
                         </div>
                         <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputAmazonB2B').click()">
                             <p class="font-bold text-gray-600">Upload Amazon B2B</p>
-                            <input type="file" id="fileInputAmazonB2B" class="hidden" accept=".csv, .xlsx" data-file-name="Amazon B2B">
+                            <input type="file" id="fileInputAmazonB2B" class="hidden" accept=".csv" data-file-name="Amazon B2B">
                         </div>
                     </div>
                 </div>
@@ -215,6 +217,11 @@
             messageBoxOk: document.getElementById('message-box-ok'),
             fileInputs: Array.from(document.querySelectorAll('input[type="file"]')),
             uploadedFiles: new Set(),
+            processedData: {
+                b2cSales: [],
+                hsnB2B: [],
+                b2bSale: []
+            }
         };
 
         // Function to show the custom message box
@@ -305,59 +312,178 @@
             }, false);
         });
 
+        // Async function to read a file and return its content
+        async function readFileAsync(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+        }
+
+        // Processing logic for B2CS data
+        async function processB2CS() {
+            const b2csFiles = state.fileInputs.filter(input => input.id.startsWith('fileInput') && !input.id.includes('B2B') && input.files.length > 0);
+            let mergedData = {};
+
+            for (const input of b2csFiles) {
+                const content = await readFileAsync(input.files[0]);
+                Papa.parse(content, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        results.data.forEach(row => {
+                            // Assuming columns exist and are named as specified
+                            const key = `${row['Place Of Supply']}-${row['Rate']}`;
+                            const taxableValue = parseFloat(row['Taxable Value']) || 0;
+                            
+                            if (mergedData[key]) {
+                                mergedData[key]['Taxable Value'] += taxableValue;
+                            } else {
+                                mergedData[key] = {
+                                    'Type': 'OE', // As per instructions
+                                    'Place Of Supply': row['Place Of Supply'],
+                                    'Rate': row['Rate'],
+                                    'Applicable % of Tax Rate': '', // As per instructions
+                                    'Taxable Value': taxableValue,
+                                    'Cess Amount': 0, // Placeholder
+                                    'E-Commerce GSTIN': '' // As per instructions
+                                };
+                            }
+                        });
+                    }
+                });
+            }
+            state.processedData.b2cSales = Object.values(mergedData);
+        }
+
+        // Processing logic for HSN data
+        async function processHSN() {
+            const hsnFiles = state.fileInputs.filter(input => input.id.includes('HSN') && input.files.length > 0);
+            const b2bFiles = state.fileInputs.filter(input => input.id.includes('B2B') && input.files.length > 0);
+
+            // Combine HSN from both B2B and dedicated HSN files
+            const allHsnFiles = [...hsnFiles, ...b2bFiles];
+            let mergedData = {};
+
+            for (const input of allHsnFiles) {
+                 const content = await readFileAsync(input.files[0]);
+                 Papa.parse(content, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        results.data.forEach(row => {
+                            const key = `${row['HSN']}-${row['Rate']}`;
+                            const quantity = parseFloat(row['Total Quantity']) || 0;
+                            const totalValue = parseFloat(row['Total Value']) || 0;
+                            const taxableValue = parseFloat(row['Taxable Value']) || 0;
+                            const integratedTax = parseFloat(row['Integrated Tax Amount']) || 0;
+                            const centralTax = parseFloat(row['Central Tax Amount']) || 0;
+                            const stateTax = parseFloat(row['State/UT Tax Amount']) || 0;
+                            const cessAmount = parseFloat(row['Cess amount']) || 0;
+
+                            if (mergedData[key]) {
+                                mergedData[key]['Total Quantity'] += quantity;
+                                mergedData[key]['Total Value'] += totalValue;
+                                mergedData[key]['Taxable Value'] += taxableValue;
+                                mergedData[key]['Integrated Tax Amount'] += integratedTax;
+                                mergedData[key]['Central Tax Amount'] += centralTax;
+                                mergedData[key]['State/UT Tax Amount'] += stateTax;
+                                mergedData[key]['Cess amount'] += cessAmount;
+                            } else {
+                                mergedData[key] = {
+                                    'HSN': row['HSN'],
+                                    'Description': row['Description'], // Keep first description
+                                    'UQC': 'PCS-PIECES', // As per instructions
+                                    'Total Quantity': quantity,
+                                    'Total Value': totalValue,
+                                    'Taxable Value': taxableValue,
+                                    'Integrated Tax Amount': integratedTax,
+                                    'Central Tax Amount': centralTax,
+                                    'State/UT Tax Amount': stateTax,
+                                    'Cess amount': cessAmount,
+                                    'Rate': row['Rate']
+                                };
+                            }
+                        });
+                    }
+                });
+            }
+            state.processedData.hsnB2B = Object.values(mergedData);
+        }
+
+        // Processing logic for B2B data (combining rows)
+        async function processB2B() {
+            const b2bFiles = state.fileInputs.filter(input => input.id.includes('B2B') && input.files.length > 0);
+            let combinedRows = [];
+
+            for (const input of b2bFiles) {
+                const content = await readFileAsync(input.files[0]);
+                Papa.parse(content, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        results.data.forEach(row => {
+                            // As per instructions, fill "Reverse Charge" and "Invoice type"
+                            row['Reverse Charge'] = 'N';
+                            row['Applicable % of Tax Rate'] = '';
+                            row['Invoice Type'] = 'Regular B2B';
+                            combinedRows.push(row);
+                        });
+                    }
+                });
+            }
+            state.processedData.b2bSale = combinedRows;
+        }
+
         // "Process" button click handler
-        state.processButton.addEventListener('click', () => {
-            // Simulate data processing
+        state.processButton.addEventListener('click', async () => {
             const processingMessage = "Processing your files and merging data. This might take a moment...";
             showMessage(processingMessage);
             
-            // In a real application, you would handle the file processing logic here.
-            // For this example, we'll simulate a delay before showing the download buttons.
+            // Call all processing functions
+            await processB2CS();
+            await processHSN();
+            await processB2B();
+
             setTimeout(() => {
                 state.messageBox.style.display = 'none';
-                
-                // Show the download section
                 state.downloadSection.classList.remove('hidden');
                 showMessage("Reports are ready to download!");
-            }, 2000); // Simulate 2-second processing time
+            }, 2000); 
         });
 
-        // Function to create CSV content based on your instructions
-        function createCSVContent(type) {
-            let content = "";
-            switch(type) {
-                case 'b2cs':
-                    // "Type", "Place Of Supply", "Rate", "Applicable % of Tax Rate", "Taxable Value", "Cess Amount", "E-Commerce GSTIN"
-                    content = "Type,Place Of Supply,Rate,Applicable % of Tax Rate,Taxable Value,Cess Amount,E-Commerce GSTIN\n";
-                    content += "OE,Delhi,18,,1000,0,\n";
-                    break;
-                case 'hsn-sales':
-                case 'hsn-b2b':
-                    // "HSN", "Description", "UQC", "Total Quantity", "Total Value", "Taxable Value", "Integrated Tax Amount", "Central Tax Amount", "State/UT Tax Amount", "Cess amount", "Rate"
-                    content = "HSN,Description,UQC,Total Quantity,Total Value,Taxable Value,Integrated Tax Amount,Central Tax Amount,State/UT Tax Amount,Cess amount,Rate\n";
-                    content += "1234,Sample Item,PCS-PIECES,1,1180,1000,90,90,90,0,18\n";
-                    break;
-                case 'b2b':
-                    // "GSTIN/UIN of Recipient", "Receiver Name", "Invoice Number", "Invoice date", "Invoice Value", "Place Of Supply", "Reverse Charge", "Applicable % of Tax Rate", "Invoice Type", "E-Commerce GSTIN", "Rate", "Taxable Value", "Cess amount"
-                    content = "GSTIN/UIN of Recipient,Receiver Name,Invoice Number,Invoice date,Invoice Value,Place Of Supply,Reverse Charge,Applicable % of Tax Rate,Invoice Type,E-Commerce GSTIN,Rate,Taxable Value,Cess amount\n";
-                    content += "27ABCD12345ABCD1Z5,Sample Receiver,INV123,01-01-2023,1180,Delhi,N,,Regular B2B,,18,1000,0\n";
-                    break;
-            }
-            return content;
+        // Function to convert processed data to CSV string
+        function toCsvString(data, headers) {
+            if (!data || data.length === 0) return headers.join(',') + '\n';
+            const rows = data.map(row => headers.map(header => {
+                let value = row[header];
+                if (value === undefined || value === null) {
+                    value = '';
+                }
+                return `"${value}"`;
+            }).join(','));
+            return headers.join(',') + '\n' + rows.join('\n');
         }
 
         // "Download All" button click handler
         state.downloadAllButton.addEventListener('click', () => {
             showMessage("Preparing files for download...");
 
-            // Create a new JSZip instance
             const zip = new JSZip();
 
-            // Add each report to the zip file with sample data
-            zip.file("Global B2CS.csv", createCSVContent('b2cs'));
-            zip.file("Global HSN (Sales).csv", createCSVContent('hsn-sales'));
-            zip.file("Global HSN (B2B).csv", createCSVContent('hsn-b2b'));
-            zip.file("Global B2B.csv", createCSVContent('b2b'));
+            // B2C Sales Report
+            const b2cHeaders = ["Type", "Place Of Supply", "Rate", "Applicable % of Tax Rate", "Taxable Value", "Cess Amount", "E-Commerce GSTIN"];
+            zip.file("Download B2C Sales.csv", toCsvString(state.processedData.b2cSales, b2cHeaders));
+
+            // HSN B2B Report
+            const hsnHeaders = ["HSN", "Description", "UQC", "Total Quantity", "Total Value", "Taxable Value", "Integrated Tax Amount", "Central Tax Amount", "State/UT Tax Amount", "Cess amount", "Rate"];
+            zip.file("Download HSN(B2B).csv", toCsvString(state.processedData.hsnB2B, hsnHeaders));
+
+            // B2B Sale Report
+            const b2bHeaders = ["GSTIN/UIN of Recipient", "Receiver Name", "Invoice Number", "Invoice date", "Invoice Value", "Place Of Supply", "Reverse Charge", "Applicable % of Tax Rate", "Invoice Type", "E-Commerce GSTIN", "Rate", "Taxable Value", "Cess amount"];
+            zip.file("Download B2B Sale.csv", toCsvString(state.processedData.b2bSale, b2bHeaders));
             
             // Generate the zip file and trigger the download
             zip.generateAsync({type:"blob"}).then(function(content) {
