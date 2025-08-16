@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GST Return Filing</title>
+    <!-- Use the Inter font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Include Tailwind CSS for a modern, responsive design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Apply the Inter font globally */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Custom message box for alerts */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            display: none;
+            text-align: center;
+        }
+
+        .message-box button {
+            margin-top: 1rem;
+        }
+        
+        /* Drag and drop area styles */
+        .drag-area {
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+
+        .drag-area.active {
+            border-color: #3b82f6;
+            background-color: #e0f2fe;
+        }
+
+        .drag-area:hover {
+            border-color: #60a5fa;
+        }
+        
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Main application container with a modern, clean look -->
+    <div id="app-container" class="min-h-screen flex items-center justify-center p-4">
+
+        <!-- Home Page -->
+        <div id="home-page" class="w-full max-w-lg p-8 bg-white rounded-2xl shadow-xl transition-transform duration-500 ease-in-out scale-100">
+            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">GST Return Filing</h1>
+            <div id="gst-box" class="cursor-pointer p-6 bg-blue-100 border-2 border-blue-300 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 ease-in-out">
+                <p class="text-xl font-semibold text-blue-800 text-center">Click here to start</p>
+            </div>
+        </div>
+
+        <!-- Second Page -->
+        <div id="second-page" class="w-full max-w-4xl p-8 bg-white rounded-2xl shadow-xl transition-transform duration-500 ease-in-out scale-0 absolute hidden">
+            <h1 class="text-3xl font-bold text-center text-blue-600 mb-6">File Upload & Processing</h1>
+
+            <!-- Business State Dropdown -->
+            <div class="mb-6">
+                <label for="business-state" class="block text-sm font-medium text-gray-700 mb-2">Select Business State:</label>
+                <select id="business-state" name="business-state" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                    <option value="">-- Select State --</option>
+                    <option value="Andaman And Nicobar Islands">Andaman And Nicobar Islands</option>
+                    <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                    <option value="Assam">Assam</option>
+                    <option value="Bihar">Bihar</option>
+                    <option value="Chandigarh">Chandigarh</option>
+                    <option value="Chhattisgarh">Chhattisgarh</option>
+                    <option value="Dadra And Nagar Haveli And Daman And Diu">Dadra And Nagar Haveli And Daman And Diu</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Goa">Goa</option>
+                    <option value="Gujarat">Gujarat</option>
+                    <option value="Haryana">Haryana</option>
+                    <option value="Himachal Pradesh">Himachal Pradesh</option>
+                    <option value="Jammu And Kashmir">Jammu And Kashmir</option>
+                    <option value="Jharkhand">Jharkhand</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Kerala">Kerala</option>
+                    <option value="Ladakh">Ladakh</option>
+                    <option value="Lakshadweep">Lakshadweep</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Manipur">Manipur</option>
+                    <option value="Meghalaya">Meghalaya</option>
+                    <option value="Mizoram">Mizoram</option>
+                    <option value="Nagaland">Nagaland</option>
+                    <option value="Odisha">Odisha</option>
+                    <option value="Other Territory">Other Territory</option>
+                    <option value="Puducherry">Puducherry</option>
+                    <option value="Punjab">Punjab</option>
+                    <option value="Rajasthan">Rajasthan</option>
+                    <option value="Sikkim">Sikkim</option>
+                    <option value="Tamil Nadu">Tamil Nadu</option>
+                    <option value="Telangana">Telangana</option>
+                    <option value="Tripura">Tripura</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Uttarakhand">Uttarakhand</option>
+                    <option value="West Bengal">West Bengal</option>
+                </select>
+            </div>
+
+            <!-- Upload Sections -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Upload B2CS Data -->
+                <div>
+                    <h2 class="text-2xl font-bold text-center text-green-600 mb-4">Upload B2CS Data</h2>
+                    <div id="b2cs-uploads" class="space-y-4">
+                        <!-- File upload boxes -->
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputAmazonB2C').click()">
+                            <p class="font-medium text-gray-500">Upload Amazon B2C</p>
+                            <input type="file" id="fileInputAmazonB2C" class="hidden" accept=".csv, .xlsx" data-file-name="Amazon B2C">
+                        </div>
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputFlipkart').click()">
+                            <p class="font-medium text-gray-500">Upload Flipkart</p>
+                            <input type="file" id="fileInputFlipkart" class="hidden" accept=".csv, .xlsx" data-file-name="Flipkart">
+                        </div>
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputJiomart').click()">
+                            <p class="font-medium text-gray-500">Upload Jiomart</p>
+                            <input type="file" id="fileInputJiomart" class="hidden" accept=".csv, .xlsx" data-file-name="Jiomart">
+                        </div>
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputMeeshoSale').click()">
+                            <p class="font-medium text-gray-500">Upload Meesho Sale</p>
+                            <input type="file" id="fileInputMeeshoSale" class="hidden" accept=".csv, .xlsx" data-file-name="Meesho Sale">
+                        </div>
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputMeeshoReturn').click()">
+                            <p class="font-medium text-gray-500">Upload Meesho Sales return</p>
+                            <input type="file" id="fileInputMeeshoReturn" class="hidden" accept=".csv, .xlsx" data-file-name="Meesho Sales return">
+                        </div>
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputGlowroad').click()">
+                            <p class="font-medium text-gray-500">Upload Glowroad</p>
+                            <input type="file" id="fileInputGlowroad" class="hidden" accept=".csv, .xlsx" data-file-name="Glowroad">
+                        </div>
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputB2COthers').click()">
+                            <p class="font-medium text-gray-500">Upload B2C others</p>
+                            <input type="file" id="fileInputB2COthers" class="hidden" accept=".csv, .xlsx" data-file-name="B2C others">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload B2B Data -->
+                <div>
+                    <h2 class="text-2xl font-bold text-center text-purple-600 mb-4">Upload B2B Data</h2>
+                    <div id="b2b-uploads" class="space-y-4">
+                        <!-- File upload boxes -->
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputB2BTemplate').click()">
+                            <p class="font-medium text-gray-500">Import B2B Template</p>
+                            <input type="file" id="fileInputB2BTemplate" class="hidden" accept=".csv, .xlsx" data-file-name="B2B Template">
+                        </div>
+                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputAmazonB2B').click()">
+                            <p class="font-medium text-gray-500">Upload Amazon B2B</p>
+                            <input type="file" id="fileInputAmazonB2B" class="hidden" accept=".csv, .xlsx" data-file-name="Amazon B2B">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons Section -->
+            <div id="button-section" class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="process-button" class="w-full sm:w-auto px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-200 disabled:bg-gray-400" disabled>Process</button>
+                <button id="clear-all-button" class="w-full sm:w-auto px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-300 transition-colors duration-200">Clear All</button>
+            </div>
+            
+            <!-- Download Section -->
+            <div id="download-section" class="mt-8 text-center hidden">
+                <h2 class="text-2xl font-bold text-blue-600 mb-4">Download Reports</h2>
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button id="download-all-button" class="w-full sm:w-auto px-6 py-3 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition-colors duration-200">Download All</button>
+                </div>
+                <div id="download-links" class="mt-4 flex flex-col items-center">
+                    <!-- Download links will be dynamically added here -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- The custom message box -->
+    <div id="message-box" class="message-box">
+        <p id="message-text" class="text-lg text-gray-700"></p>
+        <button id="message-box-ok" class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors">OK</button>
+    </div>
+
+    <script>
+        // Store all the states and elements in an object for better organization
+        const state = {
+            homePage: document.getElementById('home-page'),
+            secondPage: document.getElementById('second-page'),
+            gstBox: document.getElementById('gst-box'),
+            processButton: document.getElementById('process-button'),
+            clearAllButton: document.getElementById('clear-all-button'),
+            downloadSection: document.getElementById('download-section'),
+            downloadAllButton: document.getElementById('download-all-button'),
+            downloadLinks: document.getElementById('download-links'),
+            messageBox: document.getElementById('message-box'),
+            messageText: document.getElementById('message-text'),
+            messageBoxOk: document.getElementById('message-box-ok'),
+            fileInputs: Array.from(document.querySelectorAll('input[type="file"]')),
+            uploadedFiles: new Set(),
+        };
+
+        // Function to show the custom message box
+        function showMessage(text) {
+            state.messageText.innerText = text;
+            state.messageBox.style.display = 'block';
+        }
+
+        // Event listener to hide the custom message box
+        state.messageBoxOk.addEventListener('click', () => {
+            state.messageBox.style.display = 'none';
+        });
+        
+        // Handle page transition from home to second page
+        state.gstBox.addEventListener('click', () => {
+            state.homePage.classList.remove('scale-100');
+            state.homePage.classList.add('scale-0');
+            setTimeout(() => {
+                state.homePage.classList.add('hidden');
+                state.secondPage.classList.remove('hidden');
+                setTimeout(() => {
+                    state.secondPage.classList.remove('scale-0');
+                    state.secondPage.classList.add('scale-100');
+                }, 100);
+            }, 500);
+        });
+
+        // Function to update the process button state
+        function updateProcessButton() {
+            // Check if at least one file has been uploaded
+            if (state.uploadedFiles.size > 0) {
+                state.processButton.disabled = false;
+            } else {
+                state.processButton.disabled = true;
+            }
+        }
+        
+        // Handle file input changes and drag/drop functionality
+        state.fileInputs.forEach(input => {
+            const dragArea = input.closest('.drag-area');
+
+            // Event listener for file selection via button click
+            input.addEventListener('change', (e) => {
+                const fileName = input.dataset.fileName;
+                if (input.files.length > 0) {
+                    state.uploadedFiles.add(fileName);
+                    dragArea.classList.add('active');
+                    showMessage(`File "${input.files[0].name}" uploaded for ${fileName}.`);
+                } else {
+                    state.uploadedFiles.delete(fileName);
+                    dragArea.classList.remove('active');
+                }
+                updateProcessButton();
+            });
+
+            // Prevent default behavior for drag events
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dragArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            // Highlight the drag area when a file is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dragArea.addEventListener(eventName, () => {
+                    dragArea.classList.add('active');
+                }, false);
+            });
+
+            // Remove highlight when the file leaves the drag area
+            ['dragleave', 'drop'].forEach(eventName => {
+                dragArea.addEventListener(eventName, () => {
+                    dragArea.classList.remove('active');
+                }, false);
+            });
+
+            // Handle dropped files
+            dragArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const file = dt.files[0];
+                if (file) {
+                    input.files = dt.files; // Assign the dropped file to the input
+                    input.dispatchEvent(new Event('change')); // Trigger change event
+                }
+            }, false);
+        });
+
+        // "Process" button click handler
+        state.processButton.addEventListener('click', () => {
+            // Simulate data processing
+            const processingMessage = "Processing your files and merging data. This might take a moment...";
+            showMessage(processingMessage);
+            
+            // In a real application, you would handle the file processing logic here.
+            // For this example, we'll simulate a delay before showing the download buttons.
+            setTimeout(() => {
+                state.messageBox.style.display = 'none';
+                
+                // Show the download section
+                state.downloadSection.classList.remove('hidden');
+
+                // Simulate creating download links for the reports
+                state.downloadLinks.innerHTML = `
+                    <p class="text-lg text-gray-700 font-semibold mb-2">Reports are ready to download!</p>
+                    <p class="text-sm text-gray-500 mb-4">Click "Download All" to get a zip file with all reports.</p>
+                `;
+            }, 2000); // Simulate 2-second processing time
+        });
+
+        // "Download All" button click handler
+        state.downloadAllButton.addEventListener('click', () => {
+            // Simulate downloading a zip file
+            showMessage("Downloading all reports in a single zip file...");
+            // In a real application, you would generate and trigger the download here.
+            // This is a placeholder for the actual logic.
+            setTimeout(() => {
+                state.messageBox.style.display = 'none';
+                showMessage("Download complete! Your reports are ready.");
+            }, 1000);
+        });
+        
+        // "Clear All" button click handler
+        state.clearAllButton.addEventListener('click', () => {
+            // Reset all file inputs and uploaded file state
+            state.fileInputs.forEach(input => {
+                input.value = null; // Clear the file input
+                const dragArea = input.closest('.drag-area');
+                dragArea.classList.remove('active');
+            });
+            state.uploadedFiles.clear();
+            updateProcessButton();
+
+            // Hide the download section
+            state.downloadSection.classList.add('hidden');
+            state.downloadLinks.innerHTML = "";
+
+            showMessage("All uploaded data has been cleared.");
+        });
+
+    </script>
+</body>
+</html>
