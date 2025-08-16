@@ -10,11 +10,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Include Tailwind CSS for a modern, responsive design -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include JSZip for creating a downloadable zip file on the fly -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <style>
-        /* Apply the Inter font globally */
+        /* Apply the Inter font globally and add a vibrant gradient background */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background-image: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background-attachment: fixed;
         }
 
         /* Custom message box for alerts */
@@ -24,33 +27,36 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: #fff;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.2), 0 5px 10px -5px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             display: none;
             text-align: center;
         }
 
         .message-box button {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
         }
         
-        /* Drag and drop area styles */
+        /* Drag and drop area styles with a more colorful touch */
         .drag-area {
-            border: 2px dashed #d1d5db;
+            border: 2px dashed #9ca3af;
+            background-color: #f9fafb;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
 
         .drag-area.active {
-            border-color: #3b82f6;
-            background-color: #e0f2fe;
+            border-color: #4ade80; /* A vibrant green when active */
+            background-color: #f0fdf4;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
         }
 
         .drag-area:hover {
-            border-color: #60a5fa;
+            border-color: #2dd4bf; /* Teal on hover */
+            transform: translateY(-2px);
         }
-        
     </style>
 </head>
 <body class="text-gray-800">
@@ -59,21 +65,21 @@
     <div id="app-container" class="min-h-screen flex items-center justify-center p-4">
 
         <!-- Home Page -->
-        <div id="home-page" class="w-full max-w-lg p-8 bg-white rounded-2xl shadow-xl transition-transform duration-500 ease-in-out scale-100">
-            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">GST Return Filing</h1>
-            <div id="gst-box" class="cursor-pointer p-6 bg-blue-100 border-2 border-blue-300 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 ease-in-out">
-                <p class="text-xl font-semibold text-blue-800 text-center">Click here to start</p>
+        <div id="home-page" class="w-full max-w-lg p-10 bg-white rounded-3xl shadow-2xl transition-transform duration-500 ease-in-out scale-100 transform hover:rotate-1">
+            <h1 class="text-4xl font-extrabold text-center text-rose-500 mb-10">GST Return Filing</h1>
+            <div id="gst-box" class="cursor-pointer p-8 bg-blue-500 rounded-2xl shadow-lg transform hover:scale-105 hover:shadow-xl transition-all duration-300 ease-in-out">
+                <p class="text-2xl font-bold text-white text-center">Click here to start</p>
             </div>
         </div>
 
         <!-- Second Page -->
-        <div id="second-page" class="w-full max-w-4xl p-8 bg-white rounded-2xl shadow-xl transition-transform duration-500 ease-in-out scale-0 absolute hidden">
-            <h1 class="text-3xl font-bold text-center text-blue-600 mb-6">File Upload & Processing</h1>
+        <div id="second-page" class="w-full max-w-5xl p-10 bg-white rounded-3xl shadow-2xl transition-transform duration-500 ease-in-out scale-0 absolute hidden">
+            <h1 class="text-4xl font-extrabold text-center text-rose-500 mb-8">File Upload & Processing</h1>
 
             <!-- Business State Dropdown -->
-            <div class="mb-6">
-                <label for="business-state" class="block text-sm font-medium text-gray-700 mb-2">Select Business State:</label>
-                <select id="business-state" name="business-state" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+            <div class="mb-8">
+                <label for="business-state" class="block text-base font-semibold text-gray-700 mb-2">Select Business State:</label>
+                <select id="business-state" name="business-state" class="mt-1 block w-full pl-4 pr-12 py-3 text-base border-gray-300 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-lg rounded-xl shadow-sm">
                     <option value="">-- Select State --</option>
                     <option value="Andaman And Nicobar Islands">Andaman And Nicobar Islands</option>
                     <option value="Andhra Pradesh">Andhra Pradesh</option>
@@ -116,38 +122,38 @@
             </div>
 
             <!-- Upload Sections -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <!-- Upload B2CS Data -->
                 <div>
-                    <h2 class="text-2xl font-bold text-center text-green-600 mb-4">Upload B2CS Data</h2>
-                    <div id="b2cs-uploads" class="space-y-4">
+                    <h2 class="text-3xl font-bold text-center text-teal-500 mb-6">Upload B2CS Data</h2>
+                    <div id="b2cs-uploads" class="space-y-6">
                         <!-- File upload boxes -->
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputAmazonB2C').click()">
-                            <p class="font-medium text-gray-500">Upload Amazon B2C</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputAmazonB2C').click()">
+                            <p class="font-bold text-gray-600">Upload Amazon B2C</p>
                             <input type="file" id="fileInputAmazonB2C" class="hidden" accept=".csv, .xlsx" data-file-name="Amazon B2C">
                         </div>
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputFlipkart').click()">
-                            <p class="font-medium text-gray-500">Upload Flipkart</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputFlipkart').click()">
+                            <p class="font-bold text-gray-600">Upload Flipkart</p>
                             <input type="file" id="fileInputFlipkart" class="hidden" accept=".csv, .xlsx" data-file-name="Flipkart">
                         </div>
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputJiomart').click()">
-                            <p class="font-medium text-gray-500">Upload Jiomart</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputJiomart').click()">
+                            <p class="font-bold text-gray-600">Upload Jiomart</p>
                             <input type="file" id="fileInputJiomart" class="hidden" accept=".csv, .xlsx" data-file-name="Jiomart">
                         </div>
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputMeeshoSale').click()">
-                            <p class="font-medium text-gray-500">Upload Meesho Sale</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputMeeshoSale').click()">
+                            <p class="font-bold text-gray-600">Upload Meesho Sale</p>
                             <input type="file" id="fileInputMeeshoSale" class="hidden" accept=".csv, .xlsx" data-file-name="Meesho Sale">
                         </div>
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputMeeshoReturn').click()">
-                            <p class="font-medium text-gray-500">Upload Meesho Sales return</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputMeeshoReturn').click()">
+                            <p class="font-bold text-gray-600">Upload Meesho Sales return</p>
                             <input type="file" id="fileInputMeeshoReturn" class="hidden" accept=".csv, .xlsx" data-file-name="Meesho Sales return">
                         </div>
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputGlowroad').click()">
-                            <p class="font-medium text-gray-500">Upload Glowroad</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputGlowroad').click()">
+                            <p class="font-bold text-gray-600">Upload Glowroad</p>
                             <input type="file" id="fileInputGlowroad" class="hidden" accept=".csv, .xlsx" data-file-name="Glowroad">
                         </div>
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputB2COthers').click()">
-                            <p class="font-medium text-gray-500">Upload B2C others</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputB2COthers').click()">
+                            <p class="font-bold text-gray-600">Upload B2C others</p>
                             <input type="file" id="fileInputB2COthers" class="hidden" accept=".csv, .xlsx" data-file-name="B2C others">
                         </div>
                     </div>
@@ -155,15 +161,15 @@
 
                 <!-- Upload B2B Data -->
                 <div>
-                    <h2 class="text-2xl font-bold text-center text-purple-600 mb-4">Upload B2B Data</h2>
-                    <div id="b2b-uploads" class="space-y-4">
+                    <h2 class="text-3xl font-bold text-center text-purple-600 mb-6">Upload B2B Data</h2>
+                    <div id="b2b-uploads" class="space-y-6">
                         <!-- File upload boxes -->
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputB2BTemplate').click()">
-                            <p class="font-medium text-gray-500">Import B2B Template</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputB2BTemplate').click()">
+                            <p class="font-bold text-gray-600">Import B2B Template</p>
                             <input type="file" id="fileInputB2BTemplate" class="hidden" accept=".csv, .xlsx" data-file-name="B2B Template">
                         </div>
-                        <div class="drag-area w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-all duration-200" onclick="document.getElementById('fileInputAmazonB2B').click()">
-                            <p class="font-medium text-gray-500">Upload Amazon B2B</p>
+                        <div class="drag-area w-full p-6 rounded-2xl text-center cursor-pointer transform hover:-translate-y-1 transition-transform" onclick="document.getElementById('fileInputAmazonB2B').click()">
+                            <p class="font-bold text-gray-600">Upload Amazon B2B</p>
                             <input type="file" id="fileInputAmazonB2B" class="hidden" accept=".csv, .xlsx" data-file-name="Amazon B2B">
                         </div>
                     </div>
@@ -171,19 +177,16 @@
             </div>
 
             <!-- Buttons Section -->
-            <div id="button-section" class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
-                <button id="process-button" class="w-full sm:w-auto px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-200 disabled:bg-gray-400" disabled>Process</button>
-                <button id="clear-all-button" class="w-full sm:w-auto px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-300 transition-colors duration-200">Clear All</button>
+            <div id="button-section" class="mt-10 flex flex-col sm:flex-row justify-center items-center gap-6">
+                <button id="process-button" class="w-full sm:w-auto px-8 py-4 bg-cyan-500 text-white text-lg font-semibold rounded-xl shadow-lg hover:bg-cyan-600 transition-colors duration-200 disabled:bg-gray-400 disabled:shadow-none">Process</button>
+                <button id="clear-all-button" class="w-full sm:w-auto px-8 py-4 bg-gray-200 text-gray-800 text-lg font-semibold rounded-xl shadow-lg hover:bg-gray-300 transition-colors duration-200">Clear All</button>
             </div>
             
             <!-- Download Section -->
-            <div id="download-section" class="mt-8 text-center hidden">
-                <h2 class="text-2xl font-bold text-blue-600 mb-4">Download Reports</h2>
-                <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-                    <button id="download-all-button" class="w-full sm:w-auto px-6 py-3 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition-colors duration-200">Download All</button>
-                </div>
-                <div id="download-links" class="mt-4 flex flex-col items-center">
-                    <!-- Download links will be dynamically added here -->
+            <div id="download-section" class="mt-10 text-center hidden">
+                <h2 class="text-3xl font-bold text-orange-500 mb-6">Download Reports</h2>
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-6">
+                    <button id="download-all-button" class="w-full sm:w-auto px-8 py-4 bg-lime-500 text-white text-lg font-semibold rounded-xl shadow-lg hover:bg-lime-600 transition-colors duration-200">Download All</button>
                 </div>
             </div>
 
@@ -193,8 +196,8 @@
 
     <!-- The custom message box -->
     <div id="message-box" class="message-box">
-        <p id="message-text" class="text-lg text-gray-700"></p>
-        <button id="message-box-ok" class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors">OK</button>
+        <p id="message-text" class="text-xl font-medium text-gray-700"></p>
+        <button id="message-box-ok" class="px-6 py-3 bg-blue-500 text-white text-lg rounded-xl shadow-md hover:bg-blue-600 transition-colors">OK</button>
     </div>
 
     <script>
@@ -207,7 +210,6 @@
             clearAllButton: document.getElementById('clear-all-button'),
             downloadSection: document.getElementById('download-section'),
             downloadAllButton: document.getElementById('download-all-button'),
-            downloadLinks: document.getElementById('download-links'),
             messageBox: document.getElementById('message-box'),
             messageText: document.getElementById('message-text'),
             messageBoxOk: document.getElementById('message-box-ok'),
@@ -316,25 +318,66 @@
                 
                 // Show the download section
                 state.downloadSection.classList.remove('hidden');
-
-                // Simulate creating download links for the reports
-                state.downloadLinks.innerHTML = `
-                    <p class="text-lg text-gray-700 font-semibold mb-2">Reports are ready to download!</p>
-                    <p class="text-sm text-gray-500 mb-4">Click "Download All" to get a zip file with all reports.</p>
-                `;
+                showMessage("Reports are ready to download!");
             }, 2000); // Simulate 2-second processing time
         });
 
+        // Function to create CSV content based on your instructions
+        function createCSVContent(type) {
+            let content = "";
+            switch(type) {
+                case 'b2cs':
+                    // "Type", "Place Of Supply", "Rate", "Applicable % of Tax Rate", "Taxable Value", "Cess Amount", "E-Commerce GSTIN"
+                    content = "Type,Place Of Supply,Rate,Applicable % of Tax Rate,Taxable Value,Cess Amount,E-Commerce GSTIN\n";
+                    content += "OE,Delhi,18,,1000,0,\n";
+                    break;
+                case 'hsn-sales':
+                case 'hsn-b2b':
+                    // "HSN", "Description", "UQC", "Total Quantity", "Total Value", "Taxable Value", "Integrated Tax Amount", "Central Tax Amount", "State/UT Tax Amount", "Cess amount", "Rate"
+                    content = "HSN,Description,UQC,Total Quantity,Total Value,Taxable Value,Integrated Tax Amount,Central Tax Amount,State/UT Tax Amount,Cess amount,Rate\n";
+                    content += "1234,Sample Item,PCS-PIECES,1,1180,1000,90,90,90,0,18\n";
+                    break;
+                case 'b2b':
+                    // "GSTIN/UIN of Recipient", "Receiver Name", "Invoice Number", "Invoice date", "Invoice Value", "Place Of Supply", "Reverse Charge", "Applicable % of Tax Rate", "Invoice Type", "E-Commerce GSTIN", "Rate", "Taxable Value", "Cess amount"
+                    content = "GSTIN/UIN of Recipient,Receiver Name,Invoice Number,Invoice date,Invoice Value,Place Of Supply,Reverse Charge,Applicable % of Tax Rate,Invoice Type,E-Commerce GSTIN,Rate,Taxable Value,Cess amount\n";
+                    content += "27ABCD12345ABCD1Z5,Sample Receiver,INV123,01-01-2023,1180,Delhi,N,,Regular B2B,,18,1000,0\n";
+                    break;
+            }
+            return content;
+        }
+
         // "Download All" button click handler
         state.downloadAllButton.addEventListener('click', () => {
-            // Simulate downloading a zip file
-            showMessage("Downloading all reports in a single zip file...");
-            // In a real application, you would generate and trigger the download here.
-            // This is a placeholder for the actual logic.
-            setTimeout(() => {
-                state.messageBox.style.display = 'none';
-                showMessage("Download complete! Your reports are ready.");
-            }, 1000);
+            showMessage("Preparing files for download...");
+
+            // Create a new JSZip instance
+            const zip = new JSZip();
+
+            // Add each report to the zip file with sample data
+            zip.file("Global B2CS.csv", createCSVContent('b2cs'));
+            zip.file("Global HSN (Sales).csv", createCSVContent('hsn-sales'));
+            zip.file("Global HSN (B2B).csv", createCSVContent('hsn-b2b'));
+            zip.file("Global B2B.csv", createCSVContent('b2b'));
+            
+            // Generate the zip file and trigger the download
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                const a = document.createElement('a');
+                const url = URL.createObjectURL(content);
+                a.href = url;
+                a.download = "GST_Reports.zip";
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up the URL and element
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // Show success message
+                setTimeout(() => {
+                    state.messageBox.style.display = 'none';
+                    showMessage("Download complete! Your reports are ready.");
+                }, 1000);
+            });
         });
         
         // "Clear All" button click handler
@@ -350,7 +393,6 @@
 
             // Hide the download section
             state.downloadSection.classList.add('hidden');
-            state.downloadLinks.innerHTML = "";
 
             showMessage("All uploaded data has been cleared.");
         });
