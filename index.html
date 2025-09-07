@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSTify Web - GST Return Processor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* New gradient background inspired by the image */
+            background-color: #f5f3ff; /* Fallback violet-50 */
+            background-image: linear-gradient(to bottom right, #f5f3ff, #f3e8ff); /* violet-50 to purple-100 */
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        /* Updated active tab style with the new color scheme */
+        .tab-button.active {
+            border-color: #7c3aed; /* violet-600 */
+            color: #7c3aed;
+            background-color: #f5f3ff; /* violet-50 */
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px);
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            animation: slideIn 0.3s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(-20px) scale(0.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+        
+        /* Custom scrollbar for tables */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        /* Updated loader with the new primary color */
+        .loader {
+            border: 4px solid #ddd6fe; /* violet-200 */
+            border-top: 4px solid #7c3aed; /* violet-600 */
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* New gradient text with the Violet and Fuchsia combo */
+        .gradient-text {
+            background-image: linear-gradient(to right, #7c3aed, #d946ef); /* violet-600 to fuchsia-500 */
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-700">
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <div class="flex justify-center items-center gap-4">
+                 <svg class="w-12 h-12 text-violet-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C6.34 4.01 5.25 4.973 5.25 6.108V18.75c0 1.243 1.007 2.25 2.25 2.25H9.75" />
+                </svg>
+                <h1 class="text-5xl font-extrabold gradient-text">GSTify Web</h1>
+            </div>
+            <p class="text-slate-500 mt-3 max-w-xl mx-auto">Your streamlined solution for processing E-commerce sales data into GST-ready reports.</p>
+        </header>
+
+        <!-- Main Content -->
+        <!-- Added a more prominent shadow for a "lifted" effect -->
+        <main class="bg-white rounded-2xl shadow-2xl shadow-violet-200/50 p-4 sm:p-6 lg:p-8">
+
+            <!-- Tab Buttons -->
+            <div class="border-b border-slate-200 mb-8">
+                <nav class="flex flex-wrap -mb-px" aria-label="Tabs">
+                    <button class="tab-button active flex items-center gap-2 w-full sm:w-auto text-center font-semibold border-b-2 border-transparent px-4 py-3" data-tab="processing">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                        Process Data
+                    </button>
+                    <button class="tab-button flex items-center gap-2 w-full sm:w-auto text-center font-semibold border-b-2 border-transparent px-4 py-3" data-tab="reports">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 12.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" /></svg>
+                        View & Download Reports
+                    </button>
+                    <button class="tab-button flex items-center gap-2 w-full sm:w-auto text-center font-semibold border-b-2 border-transparent px-4 py-3" data-tab="utilities">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
+                        Utilities & Templates
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div>
+                <!-- Processing Tab -->
+                <div id="processing" class="tab-content space-y-8">
+                    <!-- Settings Section -->
+                    <section class="bg-gradient-to-br from-violet-50 to-white border border-violet-100 rounded-xl p-6">
+                        <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                            Initial Setup
+                        </h2>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <label class="block text-sm font-medium text-slate-600 mb-2">Business State</label>
+                                <!-- Updated display text color -->
+                                <div id="businessStateDisplay" class="text-lg font-semibold text-violet-600 mb-2">Not Set</div>
+                                <!-- Updated button color -->
+                                <button id="setBusinessStateBtn" class="w-full bg-violet-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-violet-700 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-violet-500/30">Set State</button>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <label class="block text-sm font-medium text-slate-600 mb-2">E-Commerce Operator GSTINs</label>
+                                <p class="text-xs text-slate-500 mb-2">Required for TCS Report generation.</p>
+                                <!-- Updated button color -->
+                                <button id="setEcoGstinsBtn" class="w-full bg-violet-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-violet-700 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-violet-500/30">Set ECO GSTINs</button>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- File Upload Section -->
+                    <section>
+                        <h2 class="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            Upload Sales & B2B Data
+                        </h2>
+                        <p class="text-slate-500 mb-6">Select a platform to upload its corresponding sales or return file. Supported formats: .xlsx, .xls, .csv</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <!-- B2C Platforms -->
+                            <!-- Updated hover state for upload buttons -->
+                            <button data-type="amazon" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-white border border-slate-200 rounded-lg hover:border-violet-500 hover:bg-violet-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-slate-700 group-hover:text-violet-600">Amazon (B2C)</span></button>
+                            <button data-type="flipkart" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-white border border-slate-200 rounded-lg hover:border-violet-500 hover:bg-violet-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-slate-700 group-hover:text-violet-600">Flipkart</span></button>
+                            <button data-type="jiomart" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-white border border-slate-200 rounded-lg hover:border-violet-500 hover:bg-violet-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-slate-700 group-hover:text-violet-600">Jiomart</span></button>
+                            <button data-type="meesho_sales" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-white border border-slate-200 rounded-lg hover:border-violet-500 hover:bg-violet-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-slate-700 group-hover:text-violet-600">Meesho Sales</span></button>
+                            <button data-type="meesho_return" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-white border border-slate-200 rounded-lg hover:border-violet-500 hover:bg-violet-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-slate-700 group-hover:text-violet-600">Meesho Return</span></button>
+                            <button data-type="glowroad" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-white border border-slate-200 rounded-lg hover:border-violet-500 hover:bg-violet-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-slate-700 group-hover:text-violet-600">Glowroad</span></button>
+                            <button data-type="b2c_other" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-white border border-slate-200 rounded-lg hover:border-violet-500 hover:bg-violet-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-slate-700 group-hover:text-violet-600">B2C (Other)</span></button>
+                            <!-- B2B Platforms -->
+                            <!-- Used the FUCHSIA accent color for B2B -->
+                             <button data-type="amazon_b2b" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-fuchsia-50 border border-fuchsia-200 rounded-lg hover:border-fuchsia-500 hover:bg-fuchsia-100 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-fuchsia-800 group-hover:text-fuchsia-900">Amazon (B2B)</span></button>
+                            <button data-type="b2b_template" class="upload-btn group flex flex-col items-center justify-center text-center p-4 bg-fuchsia-50 border border-fuchsia-200 rounded-lg hover:border-fuchsia-500 hover:bg-fuchsia-100 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-lg">
+                                <span class="font-semibold text-fuchsia-800 group-hover:text-fuchsia-900">B2B (Template)</span></button>
+                        </div>
+                        <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                    </section>
+
+                    <!-- Processed Files Section -->
+                    <section>
+                        <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            Processed Files Log
+                        </h2>
+                        <div id="processedFilesList" class="bg-slate-50 p-4 rounded-lg min-h-[120px] max-h-[240px] overflow-y-auto border border-dashed">
+                           <div class="text-center text-slate-500 py-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                               <p class="mt-2 font-medium">No files processed yet</p>
+                               <p class="text-sm">Upload a file to begin.</p>
+                           </div>
+                        </div>
+                    </section>
+                </div>
+                
+                <!-- Reports Tab -->
+                <div id="reports" class="tab-content" style="display: none;">
+                    <div class="flex justify-end mb-6">
+                        <button id="downloadAllBtn" class="flex items-center gap-2 bg-violet-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-violet-700 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-violet-500/30">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" /></svg>
+                            Download All as ZIP
+                        </button>
+                    </div>
+                    <div class="space-y-4" id="report-accordion">
+                        <!-- Report sections will be injected here by JS -->
+                    </div>
+                </div>
+
+                <!-- Utilities Tab -->
+                <div id="utilities" class="tab-content space-y-8" style="display: none;">
+                    <!-- Template Downloads -->
+                    <section>
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">Download Input Templates</h2>
+                        <p class="text-slate-500 mb-6">Use these templates to structure your data for "B2C (Other)" and "B2B (Template)" uploads.</p>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button id="downloadB2CTemplate" class="flex-1 flex items-center justify-center gap-2 bg-violet-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-violet-700 transition-all duration-300 shadow-lg shadow-violet-500/30">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                B2C (Other) Template
+                            </button>
+                            <button id="downloadB2BTemplate" class="flex-1 flex items-center justify-center gap-2 bg-fuchsia-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-fuchsia-700 transition-all duration-300 shadow-lg shadow-fuchsia-500/30">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                B2B Template
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Clear Data -->
+                    <section class="border border-red-300 rounded-xl p-6 bg-red-50">
+                        <h2 class="text-xl font-bold text-red-800 mb-4">Manage Data</h2>
+                        <p class="text-red-700 mb-6">This will clear all processed data and settings from the current session. This action cannot be undone.</p>
+                        <button id="clearAllDataBtn" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700 transition-all duration-300 shadow-lg shadow-red-500/30">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            Clear All Data & Reset
+                        </button>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Business State Modal -->
+    <div id="businessStateModal" class="modal justify-center items-center">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-11/12 md:max-w-md mx-auto p-6">
+            <h3 class="text-lg font-bold mb-4">Select Your Business State</h3>
+            <p class="text-sm text-slate-500 mb-4">This is used to correctly calculate IGST, CGST, and SGST.</p>
+            <select id="businessStateSelect" class="w-full border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                <!-- Options will be populated by JS -->
+            </select>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancelStateBtn" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300 transition-colors">Cancel</button>
+                <button id="saveStateBtn" class="px-5 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 transition-colors">Save State</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ECO GSTINs Modal -->
+    <div id="ecoGstinsModal" class="modal justify-center items-center">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-11/12 md:max-w-lg mx-auto p-6">
+            <h3 class="text-lg font-bold mb-4">E-Commerce Operator GSTINs</h3>
+            <div id="ecoGstinsForm" class="space-y-3 max-h-80 overflow-y-auto pr-2">
+                <!-- Form fields will be populated by JS -->
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancelEcoBtn" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300 transition-colors">Cancel</button>
+                <button id="saveEcoBtn" class="px-5 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 transition-colors">Save GSTINs</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loader Modal -->
+    <div id="loaderModal" class="modal justify-center items-center" style="background-color: rgba(241, 245, 249, 0.8);">
+        <div class="flex flex-col items-center gap-4 text-center">
+            <div class="loader"></div>
+            <p class="text-slate-700 font-semibold text-lg">Processing your file...</p>
+            <p class="text-slate-500 text-sm">This may take a moment for large files.</p>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal justify-center items-center">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-11/12 md:max-w-md mx-auto p-6">
+            <h3 id="confirmTitle" class="text-lg font-bold mb-4 text-slate-800">Confirm Action</h3>
+            <p id="confirmMessage" class="text-sm text-slate-600 mb-6">Are you sure?</p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="confirmCancelBtn" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300 transition-colors">Cancel</button>
+                <button id="confirmOkBtn" class="px-5 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message/Alert Toast -->
+    <div id="toast" class="fixed top-5 right-5 flex items-center gap-3 text-white py-3 px-5 rounded-lg shadow-lg opacity-0 translate-y-10 transition-all duration-300 z-50">
+        <div id="toastIcon"></div>
+        <p id="toastMessage" class="font-medium"></p>
+    </div>
+
+<script>
+// --- CORE APPLICATION LOGIC (UNCHANGED) ---
+document.addEventListener('DOMContentLoaded', function () {
+    
+    // --- STATE MANAGEMENT & CONSTANTS ---
+    const STATE_NAME_MAPPING = {
+        'Andaman & Nicobar Islands': '35-Andaman & Nicobar Islands', 'Andaman And Nicobar Islands': '35-Andaman & Nicobar Islands', 'Andaman and Nicobar Islands': '35-Andaman & Nicobar Islands', 'Andhra Pradesh': '37-Andhra Pradesh', 'Arunachal Pradesh': '12-Arunachal Pradesh', 'Assam': '18-Assam', 'Bihar': '10-Bihar', 'Chandigarh': '04-Chandigarh', 'Chattisgarh': '22-Chhattisgarh', 'Chhattisgarh': '22-Chhattisgarh', 'Dadra & Nagar Haveli': '26-Dadra & Nagar Haveli', 'Dadra And Nagar Haveli And Daman And Diu': '26-Dadra & Nagar Haveli', 'The Dadra And Nagar Haveli': '26-Dadra & Nagar Haveli', 'Dadra And Nagar Haveli': '26-Dadra & Nagar Haveli', 'Daman And Diu': '25-Daman & Diu', 'Daman & Diu': '25-Daman & Diu', 'Daman and Diu': '25-Daman & Diu', 'Delhi': '07-Delhi', 'New Delhi': '07-Delhi', 'Foreign Country': '96-Foreign Country', 'Goa': '30-Goa', 'Gujarat': '24-Gujarat', 'Haryana': '06-Haryana', 'Himachal Pradesh': '02-Himachal Pradesh', 'Jammu & Kashmir': '01-Jammu & Kashmir', 'Jammu And Kashmir': '01-Jammu & Kashmir', 'Jammu and Kashmir': '01-Jammu & Kashmir', 'Jharkhand': '20-Jharkhand', 'Karnataka': '29-Karnataka', 'Kerala': '32-Kerala', 'Ladakh': '38-Ladakh', 'Lakshdweep': '31-Lakshdweep', 'Madhya Pradesh': '23-Madhya Pradesh', 'Maharashtra': '27-Maharashtra', 'Manipur': '14-Manipur', 'Meghalaya': '17-Meghalaya', 'Mizoram': '15-Mizoram', 'Nagaland': '13-Nagaland', 'Odisha': '21-Odisha', 'Other Territory': '97-Other Territory', 'Puducherry': '34-Puducherry', 'Pondicherry': '34-Puducherry', 'Punjab': '03-Punjab', 'Rajasthan': '08-Rajasthan', 'Sikkim': '11-Sikkim', 'Tamil Nadu': '33-Tamil Nadu', 'Telangana': '36-Telangana', 'Tripura': '16-Tripura', 'Uttar Pradesh': '09-Uttar Pradesh', 'Uttarakhand': '05-Uttarakhand', 'West Bengal': '19-West Bengal'
+    };
+    const INDIAN_STATES_LIST = [
+        'Andaman And Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chandigarh', 'Chhattisgarh', 'Dadra And Nagar Haveli And Daman And Diu', 'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu And Kashmir', 'Jharkhand', 'Karnataka', 'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Other Territory', 'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+    ];
+    const ECO_OPERATORS = ["Amazon", "Flipkart", "Jiomart", "Meesho", "Glowroad"];
+
+    let appState = {
+        data: { b2cs: [], hsn: [], b2b: [], hsn_b2b: [] },
+        processedFiles: {},
+        settings: {
+            businessState: "",
+            businessStateMapped: "",
+            ecoGstins: { Amazon: "", Flipkart: "", Jiomart: "", Meesho: "", Glowroad: "" }
+        }
+    };
+    
+    // --- DOM ELEMENT REFERENCES ---
+    const fileInput = document.getElementById('fileInput');
+    const loaderModal = document.getElementById('loaderModal');
+    let currentUploadType = null;
+    
+    // --- UTILITY FUNCTIONS ---
+    const showToast = (message, type = 'info') => {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        const toastIcon = document.getElementById('toastIcon');
+        
+        toastMessage.textContent = message;
+        
+        toast.classList.remove('bg-violet-500', 'bg-emerald-500', 'bg-red-500');
+        
+        let iconSvg = '';
+        if (type === 'success') {
+            toast.classList.add('bg-emerald-500');
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+        } else if (type === 'error') {
+            toast.classList.add('bg-red-500');
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+        } else {
+            toast.classList.add('bg-violet-500');
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+        }
+        toastIcon.innerHTML = iconSvg;
+
+        toast.classList.remove('opacity-0', 'translate-y-10');
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-10');
+        }, 3000);
+    };
+
+    const customRoundGstRate = (rate) => {
+        if (isNaN(rate) || rate === null) return 0;
+        try {
+            return Math.floor(parseFloat(rate) + 0.5);
+        } catch (e) {
+            return 0;
+        }
+    };
+    
+    const toNum = (val) => {
+        const num = parseFloat(val);
+        return isNaN(num) ? 0 : num;
+    };
+
+    const toTitleCase = (str) => {
+        if(!str || typeof str.toString !== 'function') return ''; // Robustness check
+        return str.toString().toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
+    const getMappedState = (stateName) => {
+        if (!stateName || typeof stateName.trim !== 'function') return `Unmapped: ${stateName || ''}`; // Robustness check
+        const titledState = toTitleCase(stateName.trim());
+        return STATE_NAME_MAPPING[titledState] || `Unmapped: ${stateName}`;
+    };
+
+    const calculateGstAmounts = (data, taxableCol, rateCol, stateCol) => {
+        if (!appState.settings.businessStateMapped) return data;
+        
+        return data.map(row => {
+            const taxableValue = toNum(row[taxableCol]);
+            const rate = toNum(row[rateCol]);
+            const calculatedTax = taxableValue * (rate / 100);
+            
+            const posMapped = getMappedState(row[stateCol] || '');
+            const isIntraState = posMapped.toUpperCase() === appState.settings.businessStateMapped.toUpperCase();
+
+            return {
+                ...row,
+                IGST: isIntraState ? 0 : calculatedTax,
+                CGST: isIntraState ? calculatedTax / 2 : 0,
+                SGST: isIntraState ? calculatedTax / 2 : 0,
+            };
+        });
+    };
+    
+    const formatInvoiceDate = (dateVal) => {
+        if (!dateVal) return null;
+        try {
+             // Handle Excel numeric date
+            if (typeof dateVal === 'number') {
+                const date = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+                if(isNaN(date.getTime())) return null; // Invalid date
+                return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+            }
+            // Handle string or Date object
+            const date = new Date(dateVal);
+            if(isNaN(date.getTime())) return null; // Invalid date
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+        } catch (e) {
+            console.error("Date formatting error for:", dateVal, e);
+            return null;
+        }
+    };
+
+    const groupBy = (array, keys, agg) => {
+        const result = {};
+        array.forEach(item => {
+            const groupKey = keys.map(key => (item[key] || '').toString()).join('||');
+            if (!result[groupKey]) {
+                result[groupKey] = {};
+                keys.forEach(key => result[groupKey][key] = item[key]);
+                Object.keys(agg).forEach(aggKey => result[groupKey][aggKey] = 0);
+            }
+            Object.keys(agg).forEach(aggKey => {
+                result[groupKey][aggKey] += toNum(item[agg[aggKey]]);
+            });
+        });
+        return Object.values(result);
+    };
+
+    // --- FILE PROCESSING LOGIC ---
+    const processFile = (file) => {
+        if (!appState.settings.businessState) {
+            showToast("Please set your Business State first in the Initial Setup section.", "error");
+            return;
+        }
+        
+        if (appState.processedFiles[currentUploadType]?.includes(file.name)) {
+            showToast(`File "${file.name}" has already been processed for this category.`, "error");
+            return;
+        }
+
+        loaderModal.style.display = 'flex';
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const sheetName = workbook.SheetNames[0];
+                let jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                
+                // If first sheet is empty, try the next ones (for Flipkart)
+                if (jsonData.length === 0 && workbook.SheetNames.length > 1) {
+                    for(let i=1; i < workbook.SheetNames.length; i++) {
+                        jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[i]]);
+                        if (jsonData.length > 0) break;
+                    }
+                }
+
+                // Flipkart needs special multi-sheet handling
+                if (currentUploadType === 'flipkart') {
+                     processFlipkart(workbook);
+                } else {
+                    const processor = getProcessor(currentUploadType);
+                    processor(jsonData);
+                }
+
+                if (!appState.processedFiles[currentUploadType]) {
+                    appState.processedFiles[currentUploadType] = [];
+                }
+                appState.processedFiles[currentUploadType].push(file.name);
+                updateProcessedFilesList();
+                renderAllReports();
+                showToast(`${toTitleCase(currentUploadType.replace('_', ' '))} data processed successfully.`, 'success');
+            } catch (error) {
+                console.error("File processing error:", error);
+                showToast(`Error processing file: ${error.message}`, 'error');
+            } finally {
+                loaderModal.style.display = 'none';
+                fileInput.value = ''; // Reset file input
+            }
+        };
+        reader.onerror = () => {
+             showToast('Error reading the file.', 'error');
+             loaderModal.style.display = 'none';
+        }
+        reader.readAsArrayBuffer(file);
+    };
+
+    const getProcessor = (type) => {
+        const processors = {
+            amazon: processAmazon,
+            jiomart: processJiomart,
+            meesho_sales: processMeeshoSales,
+            meesho_return: processMeeshoReturn,
+            glowroad: processGlowroad,
+            b2c_other: processB2COther,
+            b2b_template: processB2BTemplate,
+            amazon_b2b: processAmazonB2B,
+            flipkart: processFlipkart
+        };
+        return processors[type];
+    };
+
+    // Platform-specific processors
+    const processAmazon = (data) => {
+        data = data.filter(row => toNum(row['Tax Exclusive Gross']) !== 0);
+        if (data.length === 0) throw new Error("No valid data rows found.");
+
+        const b2csData = data.map(row => ({
+            State: row['Ship To State'],
+            Rate: customRoundGstRate((toNum(row['Cgst Rate']) + toNum(row['Sgst Rate']) + toNum(row['Igst Rate'])) * 100),
+            TaxableValue: toNum(row['Tax Exclusive Gross'])
+        }));
+        
+        const hsnDataRaw = data.map(row => ({
+            ...row,
+            Rate: customRoundGstRate((toNum(row['Cgst Rate']) + toNum(row['Sgst Rate']) + toNum(row['Igst Rate'])) * 100)
+        }));
+        
+        const hsnDataWithGst = calculateGstAmounts(hsnDataRaw, 'Tax Exclusive Gross', 'Rate', 'Ship To State');
+
+        const hsnData = hsnDataWithGst.map(row => ({
+            HSN: row['Hsn/sac']?.toString().trim(),
+            'GST Rate': row.Rate,
+            Quantity: toNum(row['Quantity']),
+            'Invoice Amount': toNum(row['Invoice Amount']),
+            'Taxable Value': toNum(row['Tax Exclusive Gross']),
+            IGST: toNum(row.IGST),
+            CGST: toNum(row.CGST),
+            SGST: toNum(row.SGST),
+            Source_Platform: 'Amazon'
+        }));
+        
+        appState.data.b2cs.push(...groupBy(b2csData, ['State', 'Rate'], { TaxableValue: 'TaxableValue' }));
+        appState.data.hsn.push(...hsnData);
+    };
+    
+    const processFlipkart = (workbook) => {
+        let processed = false;
+        if (workbook.SheetNames.includes("Section 7(A)(2) in GSTR-1")) {
+            const df_7a = XLSX.utils.sheet_to_json(workbook.Sheets["Section 7(A)(2) in GSTR-1"]);
+            const b2cs_7a = df_7a.map(row => ({
+                State: appState.settings.businessState,
+                'GST Rate': customRoundGstRate(toNum(row['CGST %']) + toNum(row['SGST/UT %'])),
+                'Taxable Value': toNum(row['Aggregate Taxable Value Rs.'])
+            }));
+            appState.data.b2cs.push(...b2cs_7a);
+            processed = true;
+        }
+        if (workbook.SheetNames.includes("Section 7(B)(2) in GSTR-1")) {
+            const df_7b = XLSX.utils.sheet_to_json(workbook.Sheets["Section 7(B)(2) in GSTR-1"]);
+            const b2cs_7b = df_7b.map(row => ({
+                State: row['Delivered State (PoS)'],
+                'GST Rate': customRoundGstRate(toNum(row['IGST %'])),
+                'Taxable Value': toNum(row['Aggregate Taxable Value Rs.'])
+            }));
+            appState.data.b2cs.push(...b2cs_7b);
+            processed = true;
+        }
+        if (workbook.SheetNames.includes("Section 12 in GSTR-1")) {
+            const df_hsn = XLSX.utils.sheet_to_json(workbook.Sheets["Section 12 in GSTR-1"]);
+            const hsn = df_hsn.map(row => {
+                const taxable = toNum(row['Total Taxable Value Rs.']);
+                const totalTax = toNum(row['IGST Amount Rs.']) + toNum(row['CGST Amount Rs.']) + toNum(row['SGST Amount Rs.']);
+                return {
+                    HSN: row['HSN Number']?.toString().trim(),
+                    'GST Rate': taxable !== 0 ? customRoundGstRate((totalTax / taxable) * 100) : 0,
+                    Quantity: toNum(row['Total Quantity in Nos.']),
+                    'Taxable Value': taxable,
+                    IGST: toNum(row['IGST Amount Rs.']),
+                    CGST: toNum(row['CGST Amount Rs.']),
+                    SGST: toNum(row['SGST Amount Rs.']),
+                    'Invoice Amount': taxable + totalTax,
+                    Source_Platform: 'Flipkart'
+                };
+            });
+            appState.data.hsn.push(...hsn);
+            processed = true;
+        }
+
+        if (!processed) throw new Error("No valid Flipkart sheets found (e.g., 'Section 12 in GSTR-1').");
+    };
+    
+    const processJiomart = (data) => {
+        data = data.filter(row => toNum(row['Taxable Value (Final Invoice Amount -Taxes)']) !== 0);
+        if (data.length === 0) throw new Error("No valid data rows found.");
+
+        const b2csData = data.map(row => ({
+            State: row["Customer's Billing State"],
+            Rate: customRoundGstRate(toNum(row['IGST Rate']) + toNum(row['CGST Rate']) + toNum(row['SGST Rate (or UTGST as applicable)'])),
+            TaxableValue: toNum(row['Taxable Value (Final Invoice Amount -Taxes)'])
+        }));
+        
+        const hsnData = data.map(row => ({
+            HSN: row['HSN Code']?.toString().trim(),
+            'GST Rate': customRoundGstRate(toNum(row['IGST Rate']) + toNum(row['CGST Rate']) + toNum(row['SGST Rate (or UTGST as applicable)'])),
+            Quantity: toNum(row['Item Quantity']),
+            'Invoice Amount': toNum(row['Final Invoice Amount (Offer Price minus Seller Coupon Amount)']),
+            'Taxable Value': toNum(row['Taxable Value (Final Invoice Amount -Taxes)']),
+            IGST: toNum(row['IGST Amount']),
+            CGST: toNum(row['CGST Amount']),
+            SGST: toNum(row['SGST Amount (Or UTGST as applicable)']),
+            Source_Platform: 'Jiomart'
+        }));
+        
+        appState.data.b2cs.push(...groupBy(b2csData, ['State', 'Rate'], { TaxableValue: 'TaxableValue' }));
+        appState.data.hsn.push(...hsnData);
+    };
+
+    const processMeesho = (data, isReturn = false) => {
+        const multiplier = isReturn ? -1 : 1;
+        const platform = isReturn ? 'Meesho_Return' : 'Meesho_Sales';
+
+        data = data.filter(row => toNum(row.total_taxable_sale_value) !== 0);
+        if (data.length === 0) throw new Error("No valid data rows found.");
+        
+        const b2csData = data.map(row => ({
+            State: row.end_customer_state_new,
+            Rate: customRoundGstRate(toNum(row.gst_rate)),
+            TaxableValue: toNum(row.total_taxable_sale_value) * multiplier
+        }));
+
+        const hsnDataWithGst = calculateGstAmounts(data, 'total_taxable_sale_value', 'gst_rate', 'end_customer_state_new');
+        
+        const hsnData = hsnDataWithGst.map(row => ({
+            HSN: row.hsn_code?.toString().trim(),
+            'GST Rate': customRoundGstRate(toNum(row.gst_rate)),
+            Quantity: toNum(row.quantity) * multiplier,
+            'Invoice Amount': toNum(row.total_invoice_value) * multiplier,
+            'Taxable Value': toNum(row.total_taxable_sale_value) * multiplier,
+            IGST: toNum(row.IGST) * multiplier,
+            CGST: toNum(row.CGST) * multiplier,
+            SGST: toNum(row.SGST) * multiplier,
+            Source_Platform: platform
+        }));
+        
+        appState.data.b2cs.push(...groupBy(b2csData, ['State', 'Rate'], { TaxableValue: 'TaxableValue' }));
+        appState.data.hsn.push(...hsnData);
+    };
+
+    const processMeeshoSales = (data) => processMeesho(data, false);
+    const processMeeshoReturn = (data) => processMeesho(data, true);
+    
+    const processGlowroad = (data) => {
+        data = data.filter(row => toNum(row['Base amount for GST ']) !== 0);
+        if (data.length === 0) throw new Error("No valid data rows found.");
+        
+        const b2csData = data.map(row => ({
+            State: row['Buyer state'],
+            Rate: customRoundGstRate(toNum(row['GST %'])),
+            TaxableValue: toNum(row['Base amount for GST '])
+        }));
+        
+        const hsnDataRaw = data.map(row => ({
+            ...row,
+            Rate: customRoundGstRate(toNum(row['GST %']))
+        }));
+
+        const hsnDataWithGst = calculateGstAmounts(hsnDataRaw, 'Base amount for GST ', 'Rate', 'Buyer state');
+        
+        const hsnData = hsnDataWithGst.map(row => ({
+            HSN: row['Product HSN code']?.toString().replace(/\./g, '').replace(/,/g, '').trim(),
+            'GST Rate': row.Rate,
+            Quantity: 1, // Assumed
+            'Invoice Amount': toNum(row['Customer invoice value (GMV)']),
+            'Taxable Value': toNum(row['Base amount for GST ']),
+            IGST: toNum(row.IGST),
+            CGST: toNum(row.CGST),
+            SGST: toNum(row.SGST),
+            Source_Platform: 'Glowroad'
+        }));
+        
+        appState.data.b2cs.push(...groupBy(b2csData, ['State', 'Rate'], { TaxableValue: 'TaxableValue' }));
+        appState.data.hsn.push(...hsnData);
+    };
+    
+    const processB2COther = (data) => {
+        data = data.filter(row => toNum(row['Taxable Value']) !== 0);
+        if (data.length === 0) throw new Error("No valid data rows found.");
+
+        const b2csData = data.map(row => ({
+            State: row['Place Of Supply'],
+            Rate: customRoundGstRate(toNum(row['Rate'])),
+            TaxableValue: toNum(row['Taxable Value'])
+        }));
+        
+        const hsnData = data.map(row => ({
+            HSN: row.HSN?.toString().trim(),
+            'GST Rate': customRoundGstRate(toNum(row['Rate'])),
+            Quantity: toNum(row['Total Quantity']),
+            'Invoice Amount': toNum(row['Total Value']),
+            'Taxable Value': toNum(row['Taxable Value']),
+            IGST: toNum(row['Integrated Tax Amount']),
+            CGST: toNum(row['Central Tax Amount']),
+            SGST: toNum(row['State/UT Tax Amount']),
+            Source_Platform: 'B2C_Other'
+        }));
+        
+        appState.data.b2cs.push(...groupBy(b2csData, ['State', 'Rate'], { TaxableValue: 'TaxableValue' }));
+        appState.data.hsn.push(...hsnData);
+    };
+    
+    const processB2BTemplate = (data) => {
+        data = data.filter(row => toNum(row['Taxable Value']) > 0 && formatInvoiceDate(row['Invoice Date']));
+        if (data.length === 0) throw new Error("No valid data rows found.");
+
+        const b2bData = data.map(row => ({
+            'GSTIN/UIN of Recipient': row['GSTIN/UIN of Recipient'],
+            'Receiver Name': row['Receiver Name'],
+            'Invoice Number': row['Invoice Number'],
+            'Invoice Date': formatInvoiceDate(row['Invoice Date']),
+            'Invoice Value': toNum(row['Invoice Value']),
+            'Place Of Supply': row['Place Of Supply'],
+            'Reverse Charge': 'N',
+            'Applicable % of Tax Rate': '',
+            'Invoice Type': 'Regular',
+            'E-Commerce GSTIN': '',
+            'Rate': customRoundGstRate(toNum(row['Total Rate'])),
+            'Taxable Value': toNum(row['Taxable Value']),
+            'Cess Amount': toNum(row['Cess Amount'])
+        }));
+
+        const hsnDataRaw = data.map(row => ({
+            ...row,
+            'Total Rate': customRoundGstRate(toNum(row['Total Rate']))
+        }));
+        
+        const hsnDataWithGst = calculateGstAmounts(hsnDataRaw, 'Taxable Value', 'Total Rate', 'Place Of Supply');
+        
+        const hsnB2bData = hsnDataWithGst.map(row => ({
+            HSN: row.HSN?.toString().trim(),
+            'Description': '',
+            'UQC': 'PCS-PIECES',
+            'Total Quantity': toNum(row['Total Quantity']),
+            'Total Value': toNum(row['Invoice Value']),
+            'Taxable Value': toNum(row['Taxable Value']),
+            'Integrated Tax Amount': toNum(row.IGST),
+            'Central Tax Amount': toNum(row.CGST),
+            'State/UT Tax Amount': toNum(row.SGST),
+            'Cess Amount': toNum(row['Cess Amount']),
+            'Rate': row['Total Rate'],
+            Source_Platform: 'B2B_Template'
+        }));
+
+        appState.data.b2b.push(...b2bData);
+        appState.data.hsn_b2b.push(...hsnB2bData);
+    };
+
+    const processAmazonB2B = (data) => {
+        data = data.filter(row => toNum(row['Tax Exclusive Gross']) > 0 && formatInvoiceDate(row['Invoice Date']));
+        if (data.length === 0) throw new Error("No valid data rows found.");
+        
+        const b2bData = data.map(row => ({
+            'GSTIN/UIN of Recipient': row['Customer Bill To Gstid'],
+            'Receiver Name': row['Buyer Name'],
+            'Invoice Number': row['Invoice Number'],
+            'Invoice Date': formatInvoiceDate(row['Invoice Date']),
+            'Invoice Value': toNum(row['Invoice Amount']),
+            'Place Of Supply': row['Ship To State'],
+            'Reverse Charge': 'N',
+            'Applicable % of Tax Rate': '',
+            'Invoice Type': 'Regular B2B',
+            'E-Commerce GSTIN': '',
+            'Rate': customRoundGstRate((toNum(row['Cgst Rate']) + toNum(row['Sgst Rate']) + toNum(row['Utgst Rate']) + toNum(row['Igst Rate'])) * 100),
+            'Taxable Value': toNum(row['Tax Exclusive Gross']),
+            'Cess Amount': toNum(row['Compensatory Cess Rate'])
+        }));
+        
+        const hsnDataRaw = data.map(row => ({
+            ...row,
+            Rate: customRoundGstRate((toNum(row['Cgst Rate']) + toNum(row['Sgst Rate']) + toNum(row['Utgst Rate']) + toNum(row['Igst Rate'])) * 100)
+        }));
+
+        const hsnDataWithGst = calculateGstAmounts(hsnDataRaw, 'Tax Exclusive Gross', 'Rate', 'Ship To State');
+
+        const hsnB2bData = hsnDataWithGst.map(row => ({
+            HSN: row['Hsn/sac']?.toString().trim(),
+            'Description': '',
+            'UQC': 'PCS-PIECES',
+            'Total Quantity': toNum(row.Quantity),
+            'Total Value': toNum(row['Invoice Amount']),
+            'Taxable Value': toNum(row['Tax Exclusive Gross']),
+            'Integrated Tax Amount': toNum(row.IGST),
+            'Central Tax Amount': toNum(row.CGST),
+            'State/UT Tax Amount': toNum(row.SGST),
+            'Cess Amount': toNum(row['Compensatory Cess Rate']),
+            'Rate': row.Rate,
+            Source_Platform: 'Amazon_B2B'
+        }));
+        
+        appState.data.b2b.push(...b2bData);
+        appState.data.hsn_b2b.push(...hsnB2bData);
+    };
+
+    // --- UI Update & Rendering ---
+    const updateProcessedFilesList = () => {
+        const listEl = document.getElementById('processedFilesList');
+        listEl.innerHTML = '';
+        const allFiles = Object.entries(appState.processedFiles);
+
+        if (allFiles.length === 0 || allFiles.every(([type, files]) => files.length === 0)) {
+             listEl.innerHTML = `<div class="text-center text-slate-500 py-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                               <p class="mt-2 font-medium">No files processed yet</p>
+                               <p class="text-sm">Your uploaded files will appear here.</p>
+                           </div>`;
+            return;
+        }
+
+        allFiles.forEach(([type, files]) => {
+            if (files.length > 0) {
+                const typeHeader = document.createElement('h4');
+                typeHeader.className = 'font-semibold text-slate-700 mt-2 first:mt-0';
+                typeHeader.textContent = toTitleCase(type.replace('_', ' '));
+                listEl.appendChild(typeHeader);
+
+                const ul = document.createElement('ul');
+                ul.className = 'list-disc list-inside text-sm text-slate-600 space-y-1 mt-1';
+                files.forEach(fileName => {
+                    const li = document.createElement('li');
+                    li.textContent = fileName;
+                    ul.appendChild(li);
+                });
+                listEl.appendChild(ul);
+            }
+        });
+    };
+    
+    // --- REPORT GENERATION & DISPLAY ---
+    const getCompiledData = {
+        b2cs: () => {
+            if(appState.data.b2cs.length === 0) return [];
+            const mapped = appState.data.b2cs.map(r => ({...r, State: getMappedState(r.State)}));
+            return groupBy(mapped, ['State', 'Rate'], {TaxableValue: 'TaxableValue'});
+        },
+        hsn: () => {
+            if(appState.data.hsn.length === 0) return [];
+            const grouped = groupBy(appState.data.hsn, ['HSN', 'GST Rate'], {
+                Quantity: 'Quantity', 'Invoice Amount': 'Invoice Amount', 
+                'Taxable Value': 'Taxable Value', IGST: 'IGST', CGST: 'CGST', SGST: 'SGST'
+            });
+            return grouped;
+        },
+        b2b: () => {
+            if(appState.data.b2b.length === 0) return [];
+            return appState.data.b2b.map(r => ({...r, 'Place Of Supply': getMappedState(r['Place Of Supply'])}));
+        },
+        hsn_b2b: () => {
+            if(appState.data.hsn_b2b.length === 0) return [];
+            return groupBy(appState.data.hsn_b2b, ['HSN', 'Rate'], {
+                'Total Quantity': 'Total Quantity', 'Total Value': 'Total Value', 'Taxable Value': 'Taxable Value',
+                'Integrated Tax Amount': 'Integrated Tax Amount', 'Central Tax Amount': 'Central Tax Amount',
+                'State/UT Tax Amount': 'State/UT Tax Amount', 'Cess Amount': 'Cess Amount'
+            });
+        },
+        eco_tcs: () => {
+            const allHsn = [...appState.data.hsn, ...appState.data.hsn_b2b.map(h => ({ // map b2b hsn to common format
+                ...h,
+                IGST: h['Integrated Tax Amount'],
+                CGST: h['Central Tax Amount'],
+                SGST: h['State/UT Tax Amount'],
+            }))];
+            if(allHsn.length === 0) return [];
+
+            const platformTotals = {};
+            ECO_OPERATORS.forEach(op => {
+                platformTotals[op] = { taxable: 0, igst: 0, cgst: 0, sgst: 0 };
+            });
+
+            allHsn.forEach(row => {
+                let platform;
+                if(row.Source_Platform?.startsWith('Amazon')) platform = 'Amazon';
+                else if(row.Source_Platform?.startsWith('Meesho')) platform = 'Meesho';
+                else if(row.Source_Platform === 'Flipkart') platform = 'Flipkart';
+                else if(row.Source_Platform === 'Jiomart') platform = 'Jiomart';
+                else if(row.Source_Platform === 'Glowroad') platform = 'Glowroad';
+                
+                if(platform) {
+                    platformTotals[platform].taxable += toNum(row['Taxable Value']);
+                    platformTotals[platform].igst += toNum(row.IGST);
+                    platformTotals[platform].cgst += toNum(row.CGST);
+                    platformTotals[platform].sgst += toNum(row.SGST);
+                }
+            });
+
+            const reportData = [];
+            ECO_OPERATORS.forEach(op => {
+                 const totals = platformTotals[op];
+                 const gstin = appState.settings.ecoGstins[op];
+                 if(gstin || totals.taxable !== 0) {
+                    reportData.push({
+                        'Nature of Supply': 'Liable to collect tax u/s 52(TCS)',
+                        'GSTIN of E-Commerce Operator': gstin,
+                        'E-Commerce Operator Name': op,
+                        'Net value of supplies': totals.taxable,
+                        'Integrated tax': totals.igst,
+                        'Central tax': totals.cgst,
+                        'State/UT tax': totals.sgst,
+                        'Cess': 0
+                    });
+                 }
+            });
+            return reportData;
+        }
+    };
+
+    const reportConfigs = {
+        b2cs: { title: 'B2CS Summary', dataFn: getCompiledData.b2cs, headers: ['State', 'Rate', 'TaxableValue'] },
+        hsn: { title: 'HSN Summary (B2C)', dataFn: getCompiledData.hsn, headers: ['HSN', 'GST Rate', 'Quantity', 'Invoice Amount', 'Taxable Value', 'IGST', 'CGST', 'SGST'] },
+        b2b: { title: 'B2B Invoices', dataFn: getCompiledData.b2b, headers: ['GSTIN/UIN of Recipient', 'Receiver Name', 'Invoice Number', 'Invoice Date', 'Invoice Value', 'Place Of Supply', 'Rate', 'Taxable Value', 'Cess Amount'] },
+        hsn_b2b: { title: 'HSN Summary (B2B)', dataFn: getCompiledData.hsn_b2b, headers: ['HSN', 'Rate', 'Total Quantity', 'Total Value', 'Taxable Value', 'Integrated Tax Amount', 'Central Tax Amount', 'State/UT Tax Amount', 'Cess Amount'] },
+        eco_tcs: { title: 'ECO (TCS) Report', dataFn: getCompiledData.eco_tcs, headers: ['GSTIN of E-Commerce Operator', 'E-Commerce Operator Name', 'Net value of supplies', 'Integrated tax', 'Central tax', 'State/UT tax'] }
+    };
+    
+    function createReportSection(key) {
+        const config = reportConfigs[key];
+        const data = config.dataFn();
+        
+        let tableHtml = `<div class="text-center text-slate-500 py-6"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3h3m-3 4h3m-3 4h3m-3 4h3" /></svg><p class="mt-2 font-medium">No data available for this report.</p></div>`;
+        if(data.length > 0) {
+            const headers = Object.keys(data[0]);
+            const headerRow = headers.map(h => `<th class="p-3 text-sm font-semibold text-left text-slate-700 bg-slate-100 first:rounded-tl-lg last:rounded-tr-lg">${h}</th>`).join('');
+            
+            const bodyRows = data.map(row => {
+                const cells = headers.map(h => {
+                    let val = row[h];
+                    if (typeof val === 'number') {
+                        val = val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                    return `<td class="p-3 text-sm border-t border-slate-200">${val === null || val === undefined ? '' : val}</td>`;
+                }).join('');
+                return `<tr class="hover:bg-slate-50">${cells}</tr>`;
+            }).join('');
+            
+            const totals = {};
+            const numericHeaders = headers.filter(h => typeof data[0][h] === 'number');
+            numericHeaders.forEach(h => {
+                totals[h] = data.reduce((sum, row) => sum + toNum(row[h]), 0);
+            });
+            
+            const footerRow = `
+                <tr class="bg-slate-100 font-bold text-slate-800">
+                    ${headers.map((h, i) => {
+                        if (i === 0) return `<td class="p-3 text-sm rounded-bl-lg">Total</td>`;
+                        if (numericHeaders.includes(h)) return `<td class="p-3 text-sm ${i === headers.length - 1 ? 'rounded-br-lg' : ''}">${totals[h].toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+                        return `<td></td>`;
+                    }).join('')}
+                </tr>`;
+            
+            tableHtml = `
+            <div class="table-container overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="w-full min-w-[600px]">
+                    <thead class="sticky top-0 bg-white"><tr>${headerRow}</tr></thead>
+                    <tbody>${bodyRows}</tbody>
+                    <tfoot>${footerRow}</tfoot>
+                </table>
+            </div>`;
+        }
+        
+        return `
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+            <button class="accordion-header w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 rounded-t-xl transition-colors">
+                <h3 class="text-lg font-bold text-slate-800">${config.title}</h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 transition-transform text-slate-500"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="accordion-content p-4" style="display:none;">
+                <div class="flex justify-end mb-4">
+                    <button data-report-type="${key}" class="download-report-btn flex items-center gap-2 bg-violet-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-violet-700 transition-all text-sm shadow-lg shadow-violet-500/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Download
+                    </button>
+                </div>
+                ${tableHtml}
+            </div>
+        </div>`;
+    }
+
+    function renderAllReports() {
+        const accordionContainer = document.getElementById('report-accordion');
+        accordionContainer.innerHTML = Object.keys(reportConfigs).map(createReportSection).join('');
+    }
+
+    // --- DOWNLOAD & EXPORT LOGIC ---
+    function downloadReport(reportType) {
+        const config = reportConfigs[reportType];
+        let data;
+
+        // Special handling for formatted output
+        if (reportType === 'hsn') {
+            data = config.dataFn().map(r => ({
+                HSN: r.HSN, Description: '', UQC: 'PCS-PIECES', 'Total Quantity': Math.abs(r.Quantity), 
+                'Total Value': r['Invoice Amount'], 'Taxable Value': r['Taxable Value'], 'Integrated Tax Amount': r.IGST,
+                'Central Tax Amount': r.CGST, 'State/UT Tax Amount': r.SGST, 'Cess amount': 0, Rate: r['GST Rate']
+            }));
+        } else if (reportType === 'hsn_b2b') {
+             data = config.dataFn().map(r => ({
+                HSN: r.HSN, Description: '', UQC: 'PCS-PIECES', 'Total Quantity': Math.abs(r['Total Quantity']), 
+                'Total Value': r['Total Value'], 'Taxable Value': r['Taxable Value'], 'Integrated Tax Amount': r['Integrated Tax Amount'],
+                'Central Tax Amount': r['Central Tax Amount'], 'State/UT Tax Amount': r['State/UT Tax Amount'], 'Cess Amount': 0, Rate: r.Rate
+            }));
+        } else if (reportType === 'b2cs') {
+            data = config.dataFn().map(r => ({
+                Type: 'OE', 'Place Of Supply': r.State, Rate: r.Rate, 'Applicable % of Tax Rate': '',
+                'Taxable Value': r.TaxableValue, 'Cess Amount': 0, 'E-Commerce GSTIN': ''
+            }));
+        } else if (reportType === 'b2b') {
+            data = config.dataFn().map(r => ({
+                'GSTIN/UIN of Recipient': r['GSTIN/UIN of Recipient'], 'Receiver Name': r['Receiver Name'],
+                'Invoice Number': r['Invoice Number'], 'Invoice date': r['Invoice Date'], 'Invoice Value': r['Invoice Value'],
+                'Place Of Supply': r['Place Of Supply'], 'Reverse Charge': 'N', 'Applicable % of Tax Rate': '',
+                'Invoice Type': r['Invoice Type'], 'E-Commerce GSTIN': r['E-Commerce GSTIN'], 'Rate': r.Rate,
+                'Taxable Value': r['Taxable Value'], 'Cess Amount': r['Cess Amount']
+            }));
+        }
+        else {
+            data = config.dataFn();
+        }
+
+        if (data.length === 0) {
+            showToast(`No data available to download for ${config.title}.`, 'error');
+            return;
+        }
+        
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, config.title.substring(0, 30));
+        
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+        
+        saveAs(blob, `${config.title.replace(/\s/g, '_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    document.getElementById('downloadAllBtn').addEventListener('click', () => {
+        const zip = new JSZip();
+        let reportsAdded = 0;
+        
+        Object.keys(reportConfigs).forEach(key => {
+            const config = reportConfigs[key];
+            const data = config.dataFn();
+            if(data.length > 0) {
+                const worksheet = XLSX.utils.json_to_sheet(data);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, config.title.substring(0, 30));
+                const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                zip.file(`${config.title.replace(/\s/g, '_')}.xlsx`, excelBuffer);
+                reportsAdded++;
+            }
+        });
+        
+        if (reportsAdded === 0) {
+            showToast('No data available to generate any reports for the ZIP file.', 'error');
+            return;
+        }
+
+        zip.generateAsync({ type: "blob" }).then(function(content) {
+            saveAs(content, `GST_Reports_${new Date().toISOString().slice(0,10)}.zip`);
+        });
+    });
+
+    function downloadTemplate(type) {
+        let columns, fileName;
+        if (type === 'b2c') {
+            columns = ['Place Of Supply', 'Rate', 'Taxable Value', 'Total Value', 'HSN', 'Total Quantity', 'Integrated Tax Amount', 'Central Tax Amount', 'State/UT Tax Amount', 'Cess Amount'];
+            fileName = 'B2C_Other_Input_Template.xlsx';
+        } else {
+            columns = ['GSTIN/UIN of Recipient', 'Receiver Name', 'Invoice Number', 'Invoice Date', 'Invoice Value', 'Place Of Supply', 'Total Rate', 'Taxable Value', 'Cess Amount', 'HSN', 'Total Quantity'];
+            fileName = 'B2B_Input_Template.xlsx';
+        }
+        const worksheet = XLSX.utils.json_to_sheet([{}], {header: columns});
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        saveAs(new Blob([excelBuffer]), fileName);
+    }
+    document.getElementById('downloadB2CTemplate').addEventListener('click', () => downloadTemplate('b2c'));
+    document.getElementById('downloadB2BTemplate').addEventListener('click', () => downloadTemplate('b2b'));
+
+
+    // --- TAB & MODAL MANAGEMENT ---
+    const tabs = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            tabContents.forEach(content => content.style.display = 'none');
+            const activeTabContent = document.getElementById(tab.dataset.tab);
+            activeTabContent.style.display = 'block';
+
+            if(tab.dataset.tab === 'reports') {
+                renderAllReports();
+            }
+        });
+    });
+    
+    // Accordion in reports tab
+    document.getElementById('report-accordion').addEventListener('click', (e) => {
+        const header = e.target.closest('.accordion-header');
+        if (!header) return;
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('svg');
+        const allContents = document.querySelectorAll('.accordion-content');
+        const allIcons = document.querySelectorAll('.accordion-header svg');
+
+        // Close all other accordions
+        allContents.forEach(c => { if(c !== content) c.style.display = 'none'; });
+        allIcons.forEach(i => { if(i !== icon) i.style.transform = 'rotate(0deg)'; });
+
+        if (content.style.display === 'block') {
+            content.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.style.display = 'block';
+            icon.style.transform = 'rotate(180deg)';
+        }
+    });
+
+    // Delegated event listener for download buttons inside accordion
+    document.getElementById('reports').addEventListener('click', e => {
+        if(e.target.closest('.download-report-btn')) {
+            const reportType = e.target.closest('.download-report-btn').dataset.reportType;
+            downloadReport(reportType);
+        }
+    });
+
+    // Modal logic
+    const businessStateModal = document.getElementById('businessStateModal');
+    const ecoGstinsModal = document.getElementById('ecoGstinsModal');
+    
+    document.getElementById('setBusinessStateBtn').addEventListener('click', () => businessStateModal.style.display = 'flex');
+    document.getElementById('cancelStateBtn').addEventListener('click', () => businessStateModal.style.display = 'none');
+
+    document.getElementById('setEcoGstinsBtn').addEventListener('click', () => ecoGstinsModal.style.display = 'flex');
+    document.getElementById('cancelEcoBtn').addEventListener('click', () => ecoGstinsModal.style.display = 'none');
+
+    // Populate state dropdown
+    const stateSelect = document.getElementById('businessStateSelect');
+    INDIAN_STATES_LIST.forEach(state => {
+        const option = document.createElement('option');
+        option.value = state;
+        option.textContent = state;
+        stateSelect.appendChild(option);
+    });
+    
+    // Confirmation Modal Logic
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmTitle = document.getElementById('confirmTitle');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmOkBtn = document.getElementById('confirmOkBtn');
+    const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+
+    const showConfirm = (title, message, onOk) => {
+        confirmTitle.textContent = title;
+        confirmMessage.textContent = message;
+        confirmModal.style.display = 'flex';
+
+        // Use .onclick to ensure only one listener is active
+        confirmOkBtn.onclick = () => {
+            confirmModal.style.display = 'none';
+            onOk();
+        };
+
+        confirmCancelBtn.onclick = () => {
+            confirmModal.style.display = 'none';
+        };
+    };
+
+    // Populate ECO GSTIN form
+    const ecoForm = document.getElementById('ecoGstinsForm');
+    ecoForm.innerHTML = ECO_OPERATORS.map(op => `
+        <div>
+            <label for="gstin-${op}" class="block text-sm font-medium text-slate-700">${op}</label>
+            <input type="text" id="gstin-${op}" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:ring-2 focus:ring-violet-500 focus:border-violet-500" placeholder="15-digit GSTIN">
+        </div>
+    `).join('');
+    
+    // Save state button
+    document.getElementById('saveStateBtn').addEventListener('click', () => {
+        const selectedState = stateSelect.value;
+        appState.settings.businessState = selectedState;
+        appState.settings.businessStateMapped = getMappedState(selectedState);
+        document.getElementById('businessStateDisplay').textContent = `${selectedState} (${appState.settings.businessStateMapped})`;
+        businessStateModal.style.display = 'none';
+        showToast('Business state saved!', 'success');
+    });
+
+    // Save ECO GSTINs button
+    document.getElementById('saveEcoBtn').addEventListener('click', () => {
+        let isValid = true;
+        ECO_OPERATORS.forEach(op => {
+            const input = document.getElementById(`gstin-${op}`);
+            const gstin = input.value.trim().toUpperCase();
+            if (gstin && !/^[A-Z0-9]{15}$/.test(gstin)) {
+                showToast(`Invalid GSTIN for ${op}. Must be 15 alphanumeric characters.`, 'error');
+                isValid = false;
+            }
+            if (isValid) {
+                 appState.settings.ecoGstins[op] = gstin;
+            }
+        });
+        if(isValid) {
+            ecoGstinsModal.style.display = 'none';
+            showToast('ECO GSTINs saved!', 'success');
+        }
+    });
+
+    // --- FILE INPUT HANDLING ---
+    document.querySelectorAll('.upload-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            currentUploadType = button.dataset.type;
+            fileInput.click();
+        });
+    });
+
+    fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            processFile(file);
+        }
+    });
+    
+    // --- UTILITIES ---
+    document.getElementById('clearAllDataBtn').addEventListener('click', () => {
+        showConfirm('Clear All Data', 'Are you sure you want to clear all data and settings? This cannot be undone.', () => {
+            appState.data = { b2cs: [], hsn: [], b2b: [], hsn_b2b: [] };
+            appState.processedFiles = {};
+            appState.settings.businessState = "";
+            appState.settings.businessStateMapped = "";
+            Object.keys(appState.settings.ecoGstins).forEach(k => appState.settings.ecoGstins[k] = "");
+            
+            document.getElementById('businessStateDisplay').textContent = 'Not Set';
+            updateProcessedFilesList();
+            renderAllReports();
+            showToast('All data has been cleared.', 'success');
+        });
+    });
+});
+</script>
+
+</body>
+</html>
+
